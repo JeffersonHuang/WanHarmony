@@ -1,0 +1,60 @@
+name: Build HarmonyOS HAP Package
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-hap:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 设置 Node.js 环境（HarmonyOS 构建工具需要）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 安装 OpenHarmony SDK 和工具
+      - name: Install OpenHarmony SDK
+        run: |
+          # 下载 OpenHarmony SDK（需要根据实际版本调整 URL）
+          wget https://repo.huaweicloud.com/openharmony/os/4.0-release/ohos-sdk-linux.tar.gz
+          tar -xzf ohos-sdk-linux.tar.gz -C $HOME
+          export OHOS_SDK_HOME=$HOME/ohos-sdk
+          echo "OHOS_SDK_HOME=$OHOS_SDK_HOME" >> $GITHUB_ENV
+
+      # 安装 hvigor（HarmonyOS 构建工具）
+      - name: Install hvigor
+        run: |
+          npm install -g @ohos/hvigor@2.1.0
+          hvigor --version
+
+      # 安装项目依赖
+      - name: Install project dependencies
+        run: |
+          npm install
+
+      # 构建 HAP 包
+      - name: Build HAP package
+        run: |
+          # 假设项目使用 hvigor 构建
+          ./hvigorw assembleHap
+        env:
+          OHOS_SDK_HOME: ${{ env.OHOS_SDK_HOME }}
+
+      # 上传构建产物
+      - name: Upload HAP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: harmonyos-hap
+          path: ./build/**/hap/*.hap
+          retention-days: 7
